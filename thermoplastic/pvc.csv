@@ -1,0 +1,26 @@
+﻿NAME,DENSITY,MODULUS OF ELASTICITY
+PVC_Molded_low_density,1.29,2.16
+PVC_Molded_high_density,2.5,3.24
+PVC_Extruded_low_density,1.13,2.8
+PVC_Extruded_high_density,1.85,4.83
+PVC_High_Impact_low_density,1.2,2.03
+PVC_High_Impact_high_density,1.52,3.3
+PVC_Transparent_low_density,1.12,2.24
+PVC_Transparent_high_density,1.36,3.17
+PVC_Sheet_Grade_low_density,1.15,2.55
+PVC_Sheet_Grade_high_density,1.65,2.82
+PVC_10%_Glass_Fiber_Reinforced_low_density,1.4,4.14
+PVC_10%_Glass_Fiber_Reinforced_high_density,1.48,5.52
+PVC_20%_Glass_Fiber_Reinforced_low_density,1.47,6.21
+PVC_20%_Glass_Fiber_Reinforced_high_density,1.55,7.58
+PVC_30%_Glass_Fiber_Reinforced_low_density,1.54,8.62
+PVC_30%_Glass_Fiber_Reinforced_high_density,1.62,9.65
+PVC_Powder_low_density,1.42,1.12
+PVC_Powder_high_density,1.81,3.66
+PVC_Flexible_Grade_low_density,1.291,2.4
+PVC_Flexible_Grade_high_density,1.89,3.23
+PVC_Wire_and_Cable_Grade_high_density,2.06,1.12
+PVC_Rigid_Grade_low_density,1.16,1.82
+PVC_Rigid_Grade_high_density,1.651,7.03
+CPVC_low_density,1.471,2.52
+CPVC_high_density,1.551,3.1

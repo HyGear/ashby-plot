@@ -1,0 +1,23 @@
+﻿NAME,DENSITY,MODULUS OF ELASTICITY
+Acryllic_General_Purpose_Molded_high_density,1.3,3.79
+Acrylic_Extruded_high_density,1.19,3.3
+Acrylic_Impact_Modified_Molded_low_density,1.04,1.3
+Acrylic_Impact_Modified_Molded_high_density,1.191,3.52
+Acrylic_Cast_low_density,1.18,2.76
+Acrylic_Cast_high_density,1.1911,3.3
+Acrylic_Heat_Resistant_Molded_low_density,1.15,1.72
+Acrylic_Heat_Resistant_Molded_high_density,1.2,3.6
+Acrylic_UV_Stabilized_Molded_low_density,1.151,1.79
+Acrylic_UV_Stabilized_Molded_high_density,1.201,3.45
+Acrylic_Optical_Grade_Molded_low_density,1.11,1.76
+Acrylic_Optical_Grade_Molded_high_density,1.1912,3.65
+Acrylic_High_Flow_Molded_low_density,1.1511,1.86
+Acrylic_High_Flow_Molded_high_density,1.1913,3.1
+Acrylic_Gamma_Radiation_Resistant_Molded_low_density,1.08,1.38
+Acrylic_Gamma_Radiation_Resistant_Molded_high_density,1.17,2.96
+Acrylic_Glass_Fiber_Reinforced_low_density,1.26,3.79
+Acrylic_Glass_Fiber_Reinforced_high_density,2.07,12.8
+Acrylic_Impact_Modified_Sheet_low_density,1.1513,1.7
+Acrylic_Impact_Modified_Sheet_high_density,1.181,2.85
+Acrylic_Optlical_Sheet_low_density,1.1514,1.52
+Acrylic_Optlical_Sheet_high_density,1.1914,3.38
