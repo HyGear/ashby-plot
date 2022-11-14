@@ -1,8 +1,6 @@
 # -*- coding: utf-8 -*-
 """
 Created on Wed Nov  9 18:45:25 2022
-
-@author: jhyde
 """
 import numpy as np
 import random
