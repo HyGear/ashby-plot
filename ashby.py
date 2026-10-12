@@ -59,7 +59,7 @@ PALETTE_GROUPS = {
         "CES Classic", "High Contrast Vibrant", "FEA Stress Spectrum", "Cambridge Blue", "Academic Paper Mono"
     ],
     "Industrial & Technical": [
-        "Yanmar Industrial Red", "ANSI Machinery Safety", "Copper & Patina", "Blueprint Drafting", "Aerospace Mil-Spec", "CNC Toolroom"
+        "Industrial Red", "ANSI Machinery Safety", "Copper & Patina", "Blueprint Drafting", "Aerospace Mil-Spec", "CNC Toolroom"
     ],
     "Natural & Environmental": [
         "Camo Earth", "Botanical Garden", "Desert Dune", "Deep Ocean Trench", "Arctic Glacier", "Forest Canopy", "Autumn Foliage"
