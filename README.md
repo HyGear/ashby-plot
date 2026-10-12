@@ -3,4 +3,4 @@ A simple script that generates "Ashby" plots similar to those explained in the b
 
 The latest update of the script has a usable GUI and presets of all the basic Ashby plots. It also includes enough material data to check the basic function of the application.
 
-![Ashby pot](https://raw.githubusercontent.com/HyGear/ashby-plot/refs/heads/main/screenshots/ashby-screenshot.png)
+![Ashby plot](https://raw.githubusercontent.com/HyGear/ashby-plot/refs/heads/main/screenshots/ashby-screenshot.png)
