@@ -77,7 +77,7 @@ PALETTES = {
         "Natural & Biological": "#333333", "Gaskets & Seals": "#555555", "Cellular Solids": "#B3B3B3",
         "Bearing & Friction": "#666666", "Specialty Non-Metallic": "#999999"
     },
-    "Yanmar Industrial Red": {
+    "Industrial Red": {
         "Ferrous Metals": "#444444", "Non-Ferrous Metals": "#B0B0B0", "Polymers": "#E60012",
         "Ceramics & Glasses": "#8B0000", "Composites": "#666666", "Elastomers": "#FF4D4D",
         "Natural & Biological": "#7A5230", "Gaskets & Seals": "#C77B58", "Cellular Solids": "#999999",
