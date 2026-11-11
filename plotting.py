@@ -13,6 +13,7 @@ PROPERTIES = {
     "Young's Modulus E (GPa)": "youngs_modulus",
     "Yield / Elastic Limit σy (MPa)": "yield_strength",
     "Tensile Strength σu (MPa)": "tensile_strength",
+    "Elongation at Break εf (%)": "elongation_at_break",
     "Fracture Toughness K1c (MPa·m^0.5)": "fracture_toughness",
     "Loss Coefficient η (Damping)": "loss_coefficient",
     "Thermal Conductivity λ (W/m·K)": "thermal_conductivity",
@@ -32,6 +33,7 @@ AXIS_MATH_LABELS = {
     "Young's Modulus E (GPa)": r"Young's Modulus $E$ (GPa)",
     "Yield / Elastic Limit σy (MPa)": r"Yield / Elastic Limit $\sigma_y$ (MPa)",
     "Tensile Strength σu (MPa)": r"Tensile Strength $\sigma_u$ (MPa)",
+    "Elongation at Break εf (%)": r"Elongation at Break $\varepsilon_f$ (%)",
     "Fracture Toughness K1c (MPa·m^0.5)": r"Fracture Toughness $K_{1c}$ (MPa$\cdot$m$^{0.5}$)",
     "Loss Coefficient η (Damping)": r"Loss Coefficient $\eta$ (Damping)",
     "Thermal Conductivity λ (W/m·K)": r"Thermal Conductivity $\lambda$ (W/m$\cdot$K)",
@@ -45,7 +47,6 @@ AXIS_MATH_LABELS = {
     "Specific Strength σy/ρ (MPa/(g/cm³))": r"Specific Strength $\sigma_y/\rho$ (MPa/(g/cm$^3$))"
 }
 
-# Color palettes for material classes
 PALETTES = {
     "CES Classic": {
         "Ferrous Metals": "#3B6998", "Non-Ferrous Metals": "#C49A2C", "Polymers": "#2E8B57",
@@ -239,6 +240,10 @@ SUBCLASS_CYCLE_COLORS = [
 ASHBY_PRESETS = {
     "Modulus - Density (E vs ρ)": ("Young's Modulus E (GPa)", "Density ρ (g/cm³)"),
     "Strength - Density (σy vs ρ)": ("Yield / Elastic Limit σy (MPa)", "Density ρ (g/cm³)"),
+    "Young's Modulus vs. Elongation at Break": ("Young's Modulus E (GPa)", "Elongation at Break εf (%)"),
+    "Tensile Strength vs. Elongation at Break": ("Tensile Strength σu (MPa)", "Elongation at Break εf (%)"),
+    "Elongation at Break vs. Young's Modulus": ("Elongation at Break εf (%)", "Young's Modulus E (GPa)"),
+    "Elongation at Break vs. Tensile Strength": ("Elongation at Break εf (%)", "Tensile Strength σu (MPa)"),
     "Fracture Toughness - Strength (K1c vs σy)": ("Fracture Toughness K1c (MPa·m^0.5)", "Yield / Elastic Limit σy (MPa)"),
     "Modulus - Relative Cost (E vs Cv)": ("Young's Modulus E (GPa)", "Volumetric Cost Cv ($/m³)"),
     "Strength - Relative Cost (σy vs Cv)": ("Yield / Elastic Limit σy (MPa)", "Volumetric Cost Cv ($/m³)"),
@@ -283,16 +288,6 @@ VALID_INDEX_GUIDES = {
 }
 
 def derive_subclass_color(base_hex, sub_idx, total_subs):
-    """
-    Generates a distinct shade of a base class color for each subclass.
-
-    Algorithm: HLS Color Space Luminance Modulating
-    1. Converts base RGB hex to HLS (Hue, Lightness, Saturation).
-    2. Calculates normalized subclass offset: norm = (sub_idx / (total_subs - 1)) - 0.5 in [-0.5, 0.5].
-    3. Modulates lightness L within [0.30, 0.72] based on the offset to produce darker-to-lighter shades.
-    4. Slightly boosts saturation S within [0.48, 0.95] to prevent washing out.
-    5. Converts HLS back to RGB and formats as hex string.
-    """
     if total_subs <= 1:
         return base_hex
 
@@ -311,23 +306,12 @@ def derive_subclass_color(base_hex, sub_idx, total_subs):
     return f"#{int(new_r * 255):02x}{int(new_g * 255):02x}{int(new_b * 255):02x}"
 
 def to_space(val, is_log):
-    """Transforms a coordinate value into linear visual space (log10 if is_log=True)."""
     return np.log10(max(float(val), 1e-12)) if is_log else float(val)
 
 def from_space(val, is_log):
-    """Inverts a linear visual space coordinate back to original data space (10^val if is_log=True)."""
     return (10.0**float(val)) if is_log else float(val)
 
 def compute_property_value(prop_key, row):
-    """
-    Extracts raw or derived material engineering properties from a database record row.
-
-    Handles on-the-fly derivations:
-    - Thermal Diffusivity: a = λ / (ρ * Cp)
-    - Volumetric Cost: Cv = Cm * ρ
-    - Specific Stiffness: E / ρ
-    - Specific Strength: σy / ρ
-    """
     field = PROPERTIES.get(prop_key)
     if not field:
         return None
@@ -359,31 +343,6 @@ def compute_property_value(prop_key, row):
     return row.get(field)
 
 def generate_envelope_spline(pts, x_log, y_log, scale_x_unit=0.15, scale_y_unit=0.15, space_pts_input=None):
-    """
-    Generates a smooth, closed boundary envelope (bubble) enclosing a cluster of points.
-
-    Algorithm: Convex Hull with Periodic Parametric B-Spline Interpolation
-    1. Space Transformation:
-       Converts data coordinates into visual space (log10 if logarithmic scale) so geometric
-       distance matches what the user perceives on the screen.
-    2. Cluster Size Handling:
-       - N >= 4 points:
-         Computes the 2D Convex Hull (Quickhull via `scipy.spatial.ConvexHull`) to isolate outer
-         boundary vertices. Closes the polygon loop (appending vertex 0 at end) and fits a cubic
-         periodic B-spline (scipy.interpolate.splprep with k=3, per=1, s=0.0). Samples 300 points
-         via `splev` to produce an organic boundary.
-       - N == 3 points:
-         Calculates polar angles theta = arctan2(y - cy, x - cx) around centroid (cx, cy),
-         sorts points angularly to form a counter-clockwise loop, and fits a quadratic periodic
-         spline (k=2, per=1). Samples 200 points.
-       - N == 2 points:
-         Fits an oriented ellipse centered at the midpoint, aligned along the angle theta = arctan2(dy, dx),
-         with semi-major axis proportional to inter-point distance and semi-minor axis scaled to thickness.
-       - N == 1 point:
-         Generates a circular/ellipsoidal bubble based on chart display units (scale_x_unit, scale_y_unit).
-    3. Inversion:
-       Transforms interpolated spline points back from visual space to original data scale (10^x).
-    """
     if space_pts_input is not None and len(space_pts_input) > 0:
         space_pts = np.array(space_pts_input, dtype=float)
         sx = space_pts[:, 0]
@@ -400,20 +359,17 @@ def generate_envelope_spline(pts, x_log, y_log, scale_x_unit=0.15, scale_y_unit=
 
     try:
         if len(space_pts) >= 4:
-            # 2D Convex Hull outer boundary
             hull = ConvexHull(space_pts)
             hx = [sx[i] for i in hull.vertices]
             hy = [sy[i] for i in hull.vertices]
             x_closed = np.r_[hx, hx[0]]
             y_closed = np.r_[hy, hy[0]]
 
-            # Cubic periodic B-spline smoothing
             tck, u = interpolate.splprep([x_closed, y_closed], u=None, s=0.0, per=1, k=3)
             u_new = np.linspace(u.min(), u.max(), num=300)
             x_new_space, y_new_space = interpolate.splev(u_new, tck, der=0)
 
         elif len(space_pts) == 3:
-            # Angular sort around centroid for triangle closure
             angles = np.arctan2(sy - cy, sx - cx)
             sort_idx = np.argsort(angles)
             hx = sx[sort_idx]
@@ -425,7 +381,6 @@ def generate_envelope_spline(pts, x_log, y_log, scale_x_unit=0.15, scale_y_unit=
             x_new_space, y_new_space = interpolate.splev(u_new, tck, der=0)
 
         elif len(space_pts) == 2:
-            # Oriented bounding ellipse between 2 points
             dx = sx[1] - sx[0]
             dy = sy[1] - sy[0]
             dist = np.hypot(dx, dy)
@@ -445,14 +400,12 @@ def generate_envelope_spline(pts, x_log, y_log, scale_x_unit=0.15, scale_y_unit=
             y_new_space = mid_y + x_local * np.sin(theta) + y_local * np.cos(theta)
 
         else:
-            # Minimum radius circular bubble around isolated point
             r_x = max(scale_x_unit * 0.18, 0.025) * 1.10
             r_y = max(scale_y_unit * 0.18, 0.025) * 1.10
             theta = np.linspace(0, 2 * np.pi, 80)
             x_new_space = cx + r_x * np.cos(theta)
             y_new_space = cy + r_y * np.sin(theta)
 
-        # Invert from visual coordinates back to data coordinates
         x_new = [from_space(v, x_log) for v in x_new_space]
         y_new = [from_space(v, y_log) for v in y_new_space]
         return np.array(x_new), np.array(y_new), list(zip(x_new_space, y_new_space)), (cx, cy)
@@ -460,14 +413,6 @@ def generate_envelope_spline(pts, x_log, y_log, scale_x_unit=0.15, scale_y_unit=
         return None, None, None, None
 
 def check_box_collision(cx, cy, half_w, half_h, mpl_polygons):
-    """
-    Checks if an axis-aligned bounding box collides with any polygon envelopes.
-
-    Algorithm: Multi-Point Point-in-Polygon (PIP) Sampling
-    Samples 9 test points on the candidate box (center, 4 corners, and 4 edge midpoints)
-    and tests them using `matplotlib.path.Path.contains_point` (Ray-Casting Algorithm)
-    against each envelope polygon. Returns True if any point falls inside an envelope.
-    """
     pts = [
         (cx, cy),
         (cx - half_w, cy - half_h),
@@ -486,27 +431,6 @@ def check_box_collision(cx, cy, half_w, half_h, mpl_polygons):
     return False
 
 def render_ashby_chart(ax, data_bundle, tagged_materials, options, manual_positions=None):
-    """
-    Renders the complete Ashby chart on the given Matplotlib axis.
-
-    Advanced Algorithms Included:
-    1. Multi-Tier Perimeter Callout Engine (Radial Ray Projection):
-       - Computes a global convex hull enclosing all active material envelopes.
-       - For each category/subclass label, projects a ray from the cluster center through the envelope
-         centroid along an aspect-ratio-corrected angle.
-       - Calculates the maximum reach of the global hull along this unit direction vector (ux, uy).
-       - Places candidate label positions along outer staggered radial tiers, stepping outward
-         until the label box clears all envelope polygon boundaries via `check_box_collision`.
-    2. Multi-Body Label Collision Resolution:
-       - Iterates up to 60 relaxation passes over all placed label boxes.
-       - Detects pairwise AABB overlaps (dx < sep_x and dy < sep_y).
-       - Applies a repulsive displacement along the label's radial unit vector to push colliding
-         boxes outward until overlap is resolved.
-    3. Performance Guide Lines:
-       - Evaluates selection criteria: M = y^(1/n) / x => y = C * x^n
-       - In log-log space, this forms a line with slope n passing through the geometric midpoint
-         of the current data domain.
-    """
     ax.clear()
 
     x_scale_log = (str(options.get("x_scale", "log")).lower() == "log")
@@ -656,7 +580,7 @@ def render_ashby_chart(ax, data_bundle, tagged_materials, options, manual_positi
                     if grouping_level == "both" and total_subs <= 1 and parent_cls:
                         envelope_data[parent_cls] = env_obj
 
-    # 2. Render Class Envelopes (Tangential Wrap With Zero Standoff Gap)
+    # 2. Render Class Envelopes
     if grouping_level in ("class", "both"):
         for cls_name, items in class_dict.items():
             if not items:
@@ -752,7 +676,6 @@ def render_ashby_chart(ax, data_bundle, tagged_materials, options, manual_positi
 
         aspect_ratio = (scale_x_unit / max(scale_y_unit, 1e-4))
 
-        # Sort envelopes angularly around the global cluster centroid
         envelope_sort_items = []
         for grp_name, env in active_envelope_labels.items():
             scx, scy = env["scx"], env["scy"]
@@ -769,7 +692,6 @@ def render_ashby_chart(ax, data_bundle, tagged_materials, options, manual_positi
         nominal_angles = np.linspace(-np.pi * 0.95, np.pi * 0.95, n_grp)
         tier_offsets = [0.55 * scale_y_unit, 1.20 * scale_y_unit, 1.85 * scale_y_unit]
 
-        # Compute initial radial projections
         for idx, (_, grp_name, env) in enumerate(envelope_sort_items):
             scx, scy = env["scx"], env["scy"]
             space_verts = env["space_vertices"]
@@ -786,10 +708,8 @@ def render_ashby_chart(ax, data_bundle, tagged_materials, options, manual_positi
             norm_u = np.hypot(ux, uy)
             ux, uy = ux / norm_u, uy / norm_u
 
-            # Select the envelope vertex furthest along the ray direction as the arrow anchor
             best_anchor = max(space_verts, key=lambda v: (v[0] - scx) * ux + (v[1] - scy) * uy)
 
-            # Project along ray to clear the entire global hull
             max_global_reach = 0.0
             for gv in global_hull_verts:
                 reach = (gv[0] - cluster_cx) * ux + (gv[1] - cluster_cy) * uy
@@ -804,7 +724,6 @@ def render_ashby_chart(ax, data_bundle, tagged_materials, options, manual_positi
             cand_y = base_cand_y
             step = 0.08 * scale_y_unit
 
-            # Step outward radially until candidate label box clears all envelope bubbles
             while check_box_collision(cand_x, cand_y, half_w + 0.05 * scale_x_unit, half_h + 0.05 * scale_y_unit, all_mpl_polygons):
                 cand_x += ux * step
                 cand_y += uy * step
@@ -827,7 +746,6 @@ def render_ashby_chart(ax, data_bundle, tagged_materials, options, manual_positi
                 "uy": uy
             })
 
-        # Multi-body iterative collision resolution (relaxation passes)
         for _ in range(60):
             moved = False
             for i in range(n_grp):
@@ -853,7 +771,6 @@ def render_ashby_chart(ax, data_bundle, tagged_materials, options, manual_positi
             if not moved:
                 break
 
-        # Render group annotations
         for req in group_label_requests:
             grp_name = req["grp_name"]
             display_text = req["display_text"]
@@ -1026,11 +943,9 @@ def render_ashby_chart(ax, data_bundle, tagged_materials, options, manual_positi
         if n is not None:
             min_x, max_x = min(all_x), max(all_x)
             min_y, max_y = min(all_y), max(all_y)
-            # Find geometric midpoint on log-scale or arithmetic midpoint on linear scale
             mid_x = np.sqrt(min_x * max_x) if (x_scale_log and min_x > 0) else (min_x + max_x) / 2.0
             mid_y = np.sqrt(min_y * max_y) if (y_scale_log and min_y > 0) else (min_y + max_y) / 2.0
 
-            # Solve constant C in y = C * x^n
             c_val = mid_y / (max(mid_x, 1e-12) ** n)
             line_x = np.geomspace(min_x, max_x, 150) if (x_scale_log and min_x > 0) else np.linspace(min_x, max_x, 150)
             line_y = c_val * (line_x ** n)
@@ -1056,7 +971,6 @@ def render_ashby_chart(ax, data_bundle, tagged_materials, options, manual_positi
         spine.set_color(grid_color if is_dark else fg_color)
 
     # 7. Global Viewport Auto-Zoom
-    # Expands axis limits to contain all data points and outer callout label bounding boxes
     if all_x and all_y:
         all_space_x = [to_space(x, x_scale_log) for x in all_x]
         all_space_y = [to_space(y, y_scale_log) for y in all_y]

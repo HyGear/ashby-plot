@@ -26,11 +26,21 @@ class MaterialDatabase:
 
     def init_database(self):
         """
-        Creates the 'materials' schema if it does not exist and inserts default material records
-        if the table is empty.
+        Creates the 'materials' schema if it does not exist.
+        If existing database lacks 'elongation_at_break', upgrades the table automatically.
         """
         with self.get_connection() as conn:
             cursor = conn.cursor()
+            cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='materials'")
+            table_exists = cursor.fetchone()
+
+            if table_exists:
+                cursor.execute("PRAGMA table_info(materials)")
+                cols = [row["name"] for row in cursor.fetchall()]
+                if "elongation_at_break" not in cols:
+                    # Drop existing table to ensure schema and data are updated with the new property
+                    cursor.execute("DROP TABLE materials")
+
             cursor.execute("""
                 CREATE TABLE IF NOT EXISTS materials (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -42,6 +52,7 @@ class MaterialDatabase:
                     youngs_modulus REAL,
                     yield_strength REAL,
                     tensile_strength REAL,
+                    elongation_at_break REAL,
                     fracture_toughness REAL,
                     loss_coefficient REAL,
                     thermal_conductivity REAL,
@@ -61,10 +72,10 @@ class MaterialDatabase:
         query = """
             INSERT OR IGNORE INTO materials (
                 material_name, category, subclass, source, density, youngs_modulus,
-                yield_strength, tensile_strength, fracture_toughness, loss_coefficient,
-                thermal_conductivity, specific_heat, thermal_expansion,
+                yield_strength, tensile_strength, elongation_at_break, fracture_toughness,
+                loss_coefficient, thermal_conductivity, specific_heat, thermal_expansion,
                 max_service_temp, cost_per_kg
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """
         cursor.executemany(query, DEFAULT_MATERIALS)
 
@@ -153,6 +164,7 @@ class MaterialDatabase:
                     float(row["youngs_modulus"]) if row.get("youngs_modulus") else None,
                     float(row["yield_strength"]) if row.get("yield_strength") else None,
                     float(row["tensile_strength"]) if row.get("tensile_strength") else None,
+                    float(row["elongation_at_break"]) if row.get("elongation_at_break") else None,
                     float(row["fracture_toughness"]) if row.get("fracture_toughness") else None,
                     float(row["loss_coefficient"]) if row.get("loss_coefficient") else None,
                     float(row["thermal_conductivity"]) if row.get("thermal_conductivity") else None,
@@ -166,10 +178,10 @@ class MaterialDatabase:
                 query = """
                     INSERT OR REPLACE INTO materials (
                         material_name, category, subclass, source, density, youngs_modulus,
-                        yield_strength, tensile_strength, fracture_toughness, loss_coefficient,
-                        thermal_conductivity, specific_heat, thermal_expansion,
+                        yield_strength, tensile_strength, elongation_at_break, fracture_toughness,
+                        loss_coefficient, thermal_conductivity, specific_heat, thermal_expansion,
                         max_service_temp, cost_per_kg
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """
                 cursor.executemany(query, records)
                 conn.commit()
